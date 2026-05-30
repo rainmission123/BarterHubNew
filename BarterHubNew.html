@@ -1,635 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BarterHub PH - Admin Panel</title>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    
-   <style>
-    /* COPY YOUR EXISTING CSS HERE */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 30px; text-align: center; }
-    .admin-info { background: #f8f9fa; padding: 15px 30px; border-bottom: 1px solid #dee2e6; text-align: center; }
-    .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 30px; background: #f8f9fa; }
-    .stat-card { background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-left: 5px solid #3498db; }
-    .stat-card.success { border-left-color: #27ae60; }
-    .stat-card.warning { border-left-color: #f39c12; }
-    .stat-card.danger { border-left-color: #e74c3c; }
-    .stat-number { font-size: 3rem; font-weight: bold; color: #2c3e50; display: block; }
-    .stat-label { color: #7f8c8d; font-size: 1.1rem; margin-top: 10px; }
-    .content { padding: 30px; }
-    .filters { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
-    .search-box { flex: 1; min-width: 300px; padding: 12px 20px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; }
-    .filter-select { padding: 12px 20px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1rem; background: white; min-width: 200px; }
-    .user-card { background: white; border: 1px solid #e9ecef; border-radius: 10px; padding: 25px; margin-bottom: 20px; }
-    .user-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-    .id-images { display: flex; gap: 15px; margin: 20px 0; }
-    .id-image { width: 200px; height: 150px; border: 2px solid #e9ecef; border-radius: 8px; overflow: hidden; }
-    .id-image img { width: 100%; height: 100%; object-fit: cover; }
-    .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn { padding: 12px 24px; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-    .btn-success { background: #27ae60; color: white; }
-    .btn-danger { background: #e74c3c; color: white; }
-    .btn-secondary { background: #95a5a6; color: white; }
-    .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; text-transform: uppercase; }
-    .status-pending { background: #fff3cd; color: #856404; }
-    .status-verified { background: #d4edda; color: #155724; }
-    .status-rejected { background: #f8d7da; color: #721c24; }
-
-   /* =====================️ IMAGE MODAL STYLES ===================== */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background: white;
-    padding: 15px;
-    border-radius: 10px;
-    max-width: 70%;        /* 👈 Smaller width */
-    max-height: 85vh;      /* 👈 Smaller height */
-    position: relative;
-    text-align: center;
-    overflow: hidden;      /* 👈 Prevent overflow */
-}
-
-.modal-img {
-    max-width: 105%;        /* 👈 Image takes 95% of modal */
-    max-height: 70vh;      /* 👈 Much smaller image */
-    border-radius: 8px;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-
-.close-modal {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    font-size: 1.6rem;     /* 👈 Smaller close button */
-    color: #333;
-    cursor: pointer;
-    background: white;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    z-index: 1002;
-}
-    /* =====================️ ZOOM CONTROLS ===================== */
-.zoom-controls {
-    position: absolute;
-    top: 60px;
-    right: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 1001;
-}
-
-.zoom-btn {
-    padding: 8px 12px;
-    background: #3498db;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: bold;
-    transition: background 0.3s;
-}
-
-.zoom-btn:hover {
-    background: #2980b9;
-}
-
-/* Zoom effect for image */
-.modal-img.zoomed {
-    transform: scale(1.5);
-    transition: transform 0.3s ease;
-    cursor: grab;
-}
-
-.modal-img.zoomed-out {
-    transform: scale(0.8);
-    transition: transform 0.3s ease;
-}
-
-.modal-img.draggable {
-    cursor: grab;
-}
-
-.modal-img.dragging {
-    cursor: grabbing;
-}
-
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BarterHub admin dashboard">
+  <title>BarterHub Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+  <link rel="stylesheet" href="admin.css">
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🏪 BarterHub PH Admin Panel</h1>
-            <p>User ID Verification & Management System</p>
-        </div>
-
-        <div class="admin-info">
-            <div>
-                <strong>Admin:</strong> Super Administrator | 
-                <strong>Last Login:</strong> <span id="currentTime"></span>
-            </div>
-        </div>
-
-        <div class="stats-container">
-            <div class="stat-card">
-                <span class="stat-number" id="totalUsers">0</span>
-                <span class="stat-label">Total Users</span>
-            </div>
-            <div class="stat-card success">
-                <span class="stat-number" id="verifiedUsers">0</span>
-                <span class="stat-label">Verified Users</span>
-            </div>
-            <div class="stat-card warning">
-                <span class="stat-number" id="pendingUsers">0</span>
-                <span class="stat-label">Pending Verification</span>
-            </div>
-            <div class="stat-card danger">
-                <span class="stat-number" id="rejectedUsers">0</span>
-                <span class="stat-label">Rejected Users</span>
-            </div>
-        </div>
-
-        <div class="content">
-            <div class="filters">
-                <input type="text" class="search-box" id="searchInput" 
-                       placeholder="🔍 Search users by name, email, or phone...">
-                <select class="filter-select" id="statusFilter">
-                    <option value="all">All Status</option>
-                    <option value="pending">Pending Verification</option>
-                    <option value="verified">Verified</option>
-                    <option value="rejected">Rejected</option>
-                </select>
-            </div>
-
-            <div id="usersContainer">
-                <div class="loading">
-                    <p>🔄 Loading users data...</p>
-                    <p><small>Please wait while we fetch the latest information</small></p>
-                </div>
-            </div>
-        </div>
+<body data-theme="light">
+  <section id="loginPage" class="login-page">
+    <div class="login-card">
+      <div class="brand-mark">BH</div>
+      <p class="eyebrow">Secure administrator access</p>
+      <h1>BarterHub Admin</h1>
+      <p class="muted">Sign in with your approved Firebase admin account.</p>
+      <form id="loginForm">
+        <label>Email<input id="loginEmail" type="email" autocomplete="email" required></label>
+        <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+        <button class="primary-btn full" type="submit">Sign In</button>
+        <p id="loginError" class="error"></p>
+      </form>
     </div>
+  </section>
 
-<!-- Image Modal -->
-<div class="modal" id="imageModal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal()">×</span>
-        
-        <!-- ZOOM CONTROLS -->
-        <div class="zoom-controls">
-            <button class="zoom-btn" onclick="zoomIn()">➕ Zoom In</button>
-            <button class="zoom-btn" onclick="zoomOut()">➖ Zoom Out</button>
-            <button class="zoom-btn" onclick="resetZoom()">🔄 Reset</button>
-        </div>
-        
-        <img class="modal-img" id="modalImage" src="" alt="ID Image">
-        <p style="margin-top: 15px; color: #666;">Click outside the image to close | Use buttons to zoom</p>
+  <section id="appShell" class="app-shell hidden">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Operations Console</p>
+        <h1>BarterHub Admin Panel</h1>
+        <p>ID verification, account deletion, users, and transactions.</p>
+      </div>
+      <div class="top-actions">
+        <span id="adminEmail"></span>
+        <button id="themeToggleBtn" class="ghost-btn" type="button">Dark mode</button>
+        <button id="signOutBtn" class="ghost-btn">Sign Out</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="sidebar" aria-label="Admin sections">
+        <button class="nav-btn active" data-view="dashboardView">Dashboard</button>
+        <button class="nav-btn" data-view="verificationView">ID Verification</button>
+        <button class="nav-btn" data-view="deletionView">Deletion Requests</button>
+        <button class="nav-btn" data-view="usersView">Users</button>
+        <button class="nav-btn" data-view="transactionsView">Transactions</button>
+      </nav>
+
+      <main class="content">
+        <section id="dashboardView" class="view">
+          <div class="section-head">
+            <div><h2>Dashboard</h2><p>Live summary from Firebase Realtime Database.</p></div>
+            <button id="refreshBtn" class="secondary-btn">Refresh</button>
+          </div>
+          <div class="cards">
+            <div class="stat-card"><strong id="statUsers">0</strong><span>Total users</span></div>
+            <div class="stat-card"><strong id="statPendingIds">0</strong><span>Pending IDs</span></div>
+            <div class="stat-card"><strong id="statDeletion">0</strong><span>Deletion requests</span></div>
+            <div class="stat-card"><strong id="statPayments">0</strong><span>Payments</span></div>
+          </div>
+        </section>
+
+        <section id="verificationView" class="view hidden">
+          <div class="section-head"><div><h2>ID Verification</h2><p>Review users who uploaded ID documents.</p></div></div>
+          <div class="panel filters"><input id="idSearchInput" type="search" placeholder="Search by name, email, phone, or UID"><select id="idStatusFilter"><option value="all">All statuses</option><option value="pending">Pending</option><option value="verified">Verified</option><option value="rejected">Rejected</option></select></div>
+          <div id="verificationList" class="list"></div>
+        </section>
+
+        <section id="deletionView" class="view hidden">
+          <div class="section-head"><div><h2>Account Deletion Requests</h2><p>Review pending account deletion requests.</p></div></div>
+          <div class="panel filters"><input id="deletionSearchInput" type="search" placeholder="Search by UID, email, or name"><select id="deletionStatusFilter"><option value="pending">Pending only</option><option value="all">All statuses</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select></div>
+          <div id="deletionList" class="list"></div>
+        </section>
+
+        <section id="usersView" class="view hidden">
+          <div class="section-head"><div><h2>Users</h2><p>Search user wallet, premium, and account status.</p></div></div>
+          <div class="panel filters"><input id="userSearchInput" type="search" placeholder="Search by name, email, username, or UID"><select id="userStatusFilter"><option value="all">All users</option><option value="premium">Premium</option><option value="pending_deletion">Pending deletion</option><option value="deleted">Deleted</option></select></div>
+          <div id="usersList" class="list"></div>
+        </section>
+
+        <section id="transactionsView" class="view hidden">
+          <div class="section-head"><div><h2>Transactions</h2><p>Read-only view of coin, premium, and PayMongo records.</p></div></div>
+          <div class="panel filters"><input id="transactionSearchInput" type="search" placeholder="Search by UID, payment ID, status, or type"><select id="transactionTypeFilter"><option value="all">All transaction sources</option><option value="coin_transactions">Coin transactions</option><option value="premium_transactions">Premium transactions</option><option value="paymongo_payments">PayMongo payments</option><option value="paymongo_checkout_sessions">Checkout sessions</option></select></div>
+          <div id="transactionsList" class="list"></div>
+        </section>
+      </main>
     </div>
-</div>
+  </section>
 
-    <script>
-        // =====================️ ZOOM FUNCTIONS =====================
+  <div id="reasonModal" class="modal">
+    <div class="modal-card">
+      <h3 id="reasonTitle">Reason</h3>
+      <p id="reasonText" class="muted"></p>
+      <label>Reason or note<textarea id="reasonInput"></textarea></label>
+      <div class="actions"><button id="reasonConfirmBtn" class="danger-btn">Confirm</button><button id="reasonCancelBtn" class="secondary-btn">Cancel</button></div>
+    </div>
+  </div>
 
-        function openModal(imageSrc) {
-    console.log('🖼️ Opening modal with image:', imageSrc);
-    document.getElementById('modalImage').src = imageSrc;
-    document.getElementById('imageModal').style.display = 'flex';
-    resetZoom(); // Reset zoom when opening new image
-}
-
-function closeModal() {
-    document.getElementById('imageModal').style.display = 'none';
-    resetZoom();
-}
-
-// Close modal when clicking outside
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('imageModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-});
-
-
-
-let currentZoom = 1;
-const zoomStep = 0.3;
-const maxZoom = 3;
-const minZoom = 0.5;
-
-function zoomIn() {
-    console.log('🔍 Zoom In clicked');
-    const modalImage = document.getElementById('modalImage');
-    if (currentZoom < maxZoom) {
-        currentZoom += zoomStep;
-        modalImage.style.transform = `scale(${currentZoom})`;
-        modalImage.style.transformOrigin = 'center center';
-        console.log('✅ Zoomed in to:', currentZoom);
-    } else {
-        console.log('⚠️ Maximum zoom reached');
-    }
-}
-
-function zoomOut() {
-    console.log('🔍 Zoom Out clicked');
-    const modalImage = document.getElementById('modalImage');
-    if (currentZoom > minZoom) {
-        currentZoom -= zoomStep;
-        modalImage.style.transform = `scale(${currentZoom})`;
-        modalImage.style.transformOrigin = 'center center';
-        console.log('✅ Zoomed out to:', currentZoom);
-    } else {
-        console.log('⚠️ Minimum zoom reached');
-    }
-}
-
-function resetZoom() {
-    console.log('🔄 Reset Zoom clicked');
-    const modalImage = document.getElementById('modalImage');
-    currentZoom = 1;
-    modalImage.style.transform = 'scale(1)';
-    modalImage.style.transformOrigin = 'center center';
-    console.log('✅ Zoom reset to 1');
-}
-
-// Reset zoom when modal closes
-function closeModal() {
-    document.getElementById('imageModal').style.display = 'none';
-    resetZoom();
-    console.log('✅ Modal closed, zoom reset');
-}
-
-// Simple drag functionality (optional)
-let isDragging = false;
-let startX, startY;
-
-function startDrag(e) {
-    if (currentZoom > 1) {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        document.getElementById('modalImage').style.cursor = 'grabbing';
-        e.preventDefault();
-    }
-}
-
-function stopDrag() {
-    isDragging = false;
-    document.getElementById('modalImage').style.cursor = 'grab';
-}
-
-function dragImage(e) {
-    if (!isDragging) return;
-    
-    const modalImage = document.getElementById('modalImage');
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
-    
-    // Simple drag effect
-    modalImage.style.marginLeft = deltaX + 'px';
-    modalImage.style.marginTop = deltaY + 'px';
-}
-
-// Add event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    const modalImage = document.getElementById('modalImage');
-    
-    // Remove old event listeners first
-    modalImage.removeEventListener('mousedown', startDrag);
-    modalImage.removeEventListener('mouseup', stopDrag);
-    modalImage.removeEventListener('mousemove', dragImage);
-    
-    // Add new event listeners
-    modalImage.addEventListener('mousedown', startDrag);
-    modalImage.addEventListener('mouseup', stopDrag);
-    modalImage.addEventListener('mousemove', dragImage);
-    
-    console.log('✅ Zoom event listeners added');
-});
-
-
-        // ====================== FIREBASE CONFIG ======================
-        const firebaseConfig = {
-            apiKey: "AIzaSyB8z_w1xGFyK2ZcjYieImlyaHdOPv6RQS4",
-            authDomain: "barterhub-3c947.firebaseapp.com",
-            databaseURL: "https://barterhub-3c947-default-rtdb.firebaseio.com",
-            projectId: "barterhub-3c947",
-            storageBucket: "barterhub-3c947.appspot.com",
-            messagingSenderId: "812276220118",
-            appId: "1:812276220118:web:6c4893c3ad05c0fb598977",
-            measurementId: "G-XLD6NQ0KLY"
-        };
-
-        // ====================== MAIN JAVASCRIPT ======================
-        let realUsers = [];
-        let db, auth;
-
-        // Initialize Firebase
-        function initializeFirebase() {
-            try {
-                if (typeof firebase === 'undefined') {
-                    console.error('❌ Firebase SDK not loaded!');
-                    useSampleData();
-                    return;
-                }
-
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-
-                db = firebase.database();
-                auth = firebase.auth();
-
-                console.log('✅ Firebase initialized successfully!');
-                
-                // LOAD REAL USERS DIRECTLY
-                console.log('🚀 Loading real users directly...');
-                loadRealUsers();
-
-            } catch (error) {
-                console.error('❌ Firebase initialization failed:', error);
-                useSampleData();
-            }
-        }
-        function loadRealUsers() {
-    try {
-        const usersRef = db.ref('/users');
-        console.log("📡 Fetching REAL data from /users...");
-
-        usersRef.on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const usersData = snapshot.val();
-                console.log("✅ REAL Data fetched successfully");
-
-                realUsers = Object.keys(usersData).map(key => {
-                    const user = usersData[key];
-                    
-                    if (!user || typeof user !== 'object') return null;
-
-                    // ✅ SHOW ALL USERS WHO UPLOADED ID FOR VERIFICATION
-                    // (including pending, verified, and rejected)
-                    const hasUploadedID = user.idFrontUrl && user.idBackUrl;
-                    
-                    // ❌ REMOVE THIS LINE: const isPendingVerification = user.isIDVerified === 'pending' || !user.isIDVerified;
-                    
-                    if (!hasUploadedID) {
-                        return null; // ❌ Skip users WITHOUT ID uploads ONLY
-                    }
-
-                    const joinDate = user.verificationSubmittedAt 
-                        ? new Date(user.verificationSubmittedAt).toLocaleDateString()
-                        : (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown');
-
-                    return {
-                        id: key,
-                        name: user.fullName || user.username || 'No Name Provided',
-                        email: user.email || 'No Email Provided',
-                        phone: user.phoneNumber || user.phone || 'No Phone Provided',
-                        address: user.address || 'No Address Provided',
-                        bio: user.bio || 'No bio provided',
-                        status: user.isIDVerified || 'pending',
-                        idFront: user.idFrontUrl,
-                        idBack: user.idBackUrl,
-                        joinDate: joinDate
-                    };
-                }).filter(user => user !== null);
-
-                console.log(`📥 Loaded ${realUsers.length} users with ID uploads from Firebase`);
-                
-                // ✅ ADD THIS: Show status breakdown in console
-                const statusCount = realUsers.reduce((acc, user) => {
-                    acc[user.status] = (acc[user.status] || 0) + 1;
-                    return acc;
-                }, {});
-                console.log('📊 User status breakdown:', statusCount);
-                
-                displayUsers(realUsers);
-
-            } else {
-                console.log('📭 No users found in Firebase');
-                useSampleData();
-            }
-        }, (error) => {
-            console.error('❌ Firebase error:', error);
-            useSampleData();
-        });
-    } catch (error) {
-        console.error('❌ Error in loadRealUsers:', error);
-        useSampleData();
-    }
-}
-        // ... COPY THE REST OF YOUR admin.js FUNCTIONS HERE ...
-        // (updateTime, displayUsers, updateStats, verifyUser, etc.)
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 BarterHub Admin Panel Initializing...');
-            initializeFirebase();
-        });
-
-        // ====================== 🧠 SAMPLE DATA FALLBACK ======================
-function useSampleData() {
-    console.log('🔄 Using sample data (fallback)');
-    realUsers = [
-        {
-            id: 'user001',
-            name: 'Juan Dela Cruz',
-            email: 'juan.delacruz@gmail.com',
-            phone: '+63 912 345 6789',
-            address: 'Manila, Philippines',
-            bio: 'Sample user for demo',
-            status: 'pending',
-            idFront: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=300&h=200&fit=crop',
-            idBack: 'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&h=200&fit=crop',
-            joinDate: '2024-01-15'
-        }
-    ];
-    displayUsers(realUsers);
-}
-// ====================== 📋 DISPLAY USERS ======================
-function displayUsers(users = []) {
-    const container = document.getElementById('usersContainer');
-    console.log('🔄 Displaying users:', users);
-
-    if (!users || users.length === 0) {
-        container.innerHTML = `
-            <div class="no-users">
-                <h3>📭 No Users Found</h3>
-                <p>There are no users matching your criteria.</p>
-            </div>
-        `;
-        updateStats([]);
-        return;
-    }
-
-    let html = '';
-    users.forEach(user => {
-        const statusClass = `status-${user.status}`;
-        const statusText = user.status.charAt(0).toUpperCase() + user.status.slice(1);
-
-        html += `
-            <div class="user-card" data-user-id="${user.id}" data-status="${user.status}">
-                <div class="user-header">
-                    <div class="user-info">
-                        <h3>${user.name}</h3>
-                        <div class="user-meta">
-                            <strong>Email:</strong> ${user.email} | 
-                            <strong>Phone:</strong> ${user.phone} |
-                            <strong>Joined:</strong> ${user.joinDate}
-                        </div>
-                        <div class="user-meta">
-                            <strong>User ID:</strong> ${user.id}
-                        </div>
-                    </div>
-                    <span class="status-badge ${statusClass}">${statusText}</span>
-                </div>
-
-                <div class="id-images">
-                    <div class="id-image" onclick="openModal('${user.idFront}')">
-                        <img src="${user.idFront}" alt="Front ID">
-                        <div style="text-align: center; padding: 5px; font-size: 0.8rem; color: #666;">Front ID</div>
-                    </div>
-                    <div class="id-image" onclick="openModal('${user.idBack}')">
-                        <img src="${user.idBack}" alt="Back ID">
-                        <div style="text-align: center; padding: 5px; font-size: 0.8rem; color: #666;">Back ID</div>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    ${user.status === 'pending' ? `
-                        <button class="btn btn-success" onclick="verifyUser('${user.id}', true)">
-                            ✅ Approve Verification
-                        </button>
-                        <button class="btn btn-danger" onclick="verifyUser('${user.id}', false)">
-                            ❌ Reject Verification
-                        </button>
-                    ` : `
-                        <button class="btn btn-secondary" onclick="resetVerification('${user.id}')">
-                            🔄 Reset to Pending
-                        </button>
-                    `}
-
-                    <button class="btn btn-secondary" onclick="viewUserDetails('${user.id}')">
-                        👁️ View Details
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-    updateStats(users);
-}
-
-// ====================== 📊 UPDATE STATISTICS ======================
-function updateStats(users) {
-    const total = users.length;
-    const verified = users.filter(u => u.status === 'verified').length;
-    const pending = users.filter(u => u.status === 'pending').length;
-    const rejected = users.filter(u => u.status === 'rejected').length;
-
-    document.getElementById('totalUsers').textContent = total;
-    document.getElementById('verifiedUsers').textContent = verified;
-    document.getElementById('pendingUsers').textContent = pending;
-    document.getElementById('rejectedUsers').textContent = rejected;
-}
-
-// ====================== ✅ VERIFY / REJECT / RESET ======================
-function verifyUser(userId, approve) {
-    const status = approve ? 'verified' : 'rejected';
-    const userRef = db.ref(`users/${userId}`);
-
-    if (confirm(`Sigurado ka ba na gusto mong ${status} ang ID verification ni user na ito?`)) {
-        // ✅ UPDATE FIREBASE DATABASE
-        userRef.update({ 
-            isIDVerified: status,
-            verifiedAt: Date.now(),
-            verifiedBy: 'admin' // You can add admin user ID here later
-        })
-        .then(() => {
-            alert(`✅ User verification ${status} na!`);
-            console.log(`✅ Updated user ${userId} to ${status}`);
-            
-            // ✅ RELOAD REAL DATA (not sample data)
-            loadRealUsers();
-        })
-        .catch(err => {
-            console.error('❌ Firebase update error:', err);
-            alert('❌ Hindi na-update ang status sa database.');
-        });
-    }
-}
-
-function resetVerification(userId) {
-    if (confirm("Reset this user's verification status to pending?")) {
-        alert("✅ DEMO: User status reset to pending!");
-        useSampleData();
-    }
-}
-
-// ====================== 👁️ VIEW DETAILS ======================
-function viewUserDetails(userId) {
-    const user = realUsers.find(u => u.id === userId);
-    if (user) {
-        alert(`User Details:\n\nName: ${user.name}\nEmail: ${user.email}\nPhone: ${user.phone}\nStatus: ${user.status}\nJoined: ${user.joinDate}`);
-    }
-}
-
-// ====================== 🕒 UPDATE CURRENT TIME ======================
-function updateTime() {
-    const now = new Date();
-    document.getElementById('currentTime').textContent =
-        now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-}
-setInterval(updateTime, 1000);
-updateTime();
-
-// ====================== 🔍 SEARCH & FILTER ======================
-document.getElementById('searchInput').addEventListener('input', filterUsers);
-document.getElementById('statusFilter').addEventListener('change', filterUsers);
-
-function filterUsers() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
-
-    const filteredUsers = realUsers.filter(user => {
-        const matchesSearch =
-            user.name.toLowerCase().includes(searchTerm) ||
-            user.email.toLowerCase().includes(searchTerm) ||
-            (user.phone && user.phone.includes(searchTerm));
-
-        const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
-    displayUsers(filteredUsers);
-}
-    </script>
+  <script src="admin.js"></script>
 </body>
 </html>
