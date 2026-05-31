@@ -19,6 +19,7 @@ const state = {
   users: {},
   deletionRequests: {},
   transactions: [],
+  transactionUserListeners: {},
   adminUid: "",
   pendingAction: null,
 };
@@ -137,6 +138,7 @@ function applyTheme(theme) {
 function startListeners() {
   db.ref("users").on("value", (snapshot) => {
     state.users = snapshot.val() || {};
+    listenUserTransactions();
     renderAll();
   });
 
@@ -174,7 +176,6 @@ function listenTransactions() {
     "paymongoCheckoutSessions",
     "processed_paymongo_payments",
     "processedPaymongoPayments",
-    "transactions",
     "transaction_history",
     "transactionHistory",
     "payments",
@@ -194,6 +195,41 @@ function listenTransactions() {
         .concat(rows);
       renderAll();
     });
+  });
+}
+
+function listenUserTransactions() {
+  const uids = Object.keys(state.users || {});
+
+  uids.forEach((uid) => {
+    if (state.transactionUserListeners[uid]) return;
+
+    const source = "transactions/" + uid;
+    const ref = db.ref(source).limitToLast(80);
+    const handler = (snapshot) => {
+      const rows = flattenNode("transactions", snapshot.val() || {}, uid)
+        .map((item) => Object.assign({rawSource: source, uid}, item));
+      state.transactions = state.transactions
+        .filter((item) => item.rawSource !== source)
+        .concat(rows);
+      renderAll();
+    };
+    const errorHandler = (error) => {
+      state.transactions = state.transactions.filter((item) => item.rawSource !== source);
+      console.warn("Could not read " + source, error);
+      renderAll();
+    };
+
+    ref.on("value", handler, errorHandler);
+    state.transactionUserListeners[uid] = {ref, handler};
+  });
+
+  Object.keys(state.transactionUserListeners).forEach((uid) => {
+    if (uids.includes(uid)) return;
+    const listener = state.transactionUserListeners[uid];
+    listener.ref.off("value", listener.handler);
+    delete state.transactionUserListeners[uid];
+    state.transactions = state.transactions.filter((item) => item.rawSource !== "transactions/" + uid);
   });
 }
 
