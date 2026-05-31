@@ -308,3 +308,57 @@ canvas { display: block; max-width: 100%; width: 100%; }
   #revenueCandleChart { height: 130px; }
   #statusChart { height: 140px; }
 }
+
+.topbar {
+  background:
+    radial-gradient(circle at 70% 0%, rgba(34,211,238,.18), transparent 28%),
+    linear-gradient(90deg, #020817, #03111f 55%, #020817);
+}
+
+.content {
+  background:
+    radial-gradient(circle at 65% 0%, rgba(34,211,238,.10), transparent 26%),
+    linear-gradient(180deg, #03111f, #020817);
+}
+
+.sidebar {
+  background:
+    linear-gradient(180deg, #03111f, #020817);
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 98px;
+}
+
+.stat-card strong {
+  color: #ffffff;
+}
+
+.stat-card span {
+  color: #a6b6c8;
+}
+
+.chart-card:hover,
+.stat-card:hover {
+  border-color: rgba(34,211,238,.35);
+  box-shadow:
+    0 0 0 1px rgba(34,211,238,.12),
+    0 18px 45px rgba(0,0,0,.42),
+    0 0 30px rgba(34,211,238,.08);
+}
+
+.secondary-btn,
+.ghost-btn {
+  border: 1px solid rgba(34,211,238,.22);
+  background: rgba(8,18,35,.75);
+  color: #ffffff;
+}
+
+.secondary-btn:hover,
+.ghost-btn:hover {
+  background: rgba(34,211,238,.12);
+  color: #22d3ee;
+}
