@@ -293,7 +293,7 @@ function allTransactionRows() {
 
 function walletTransferRows() {
   return state.transactions
-    .filter((item) => canonicalSource(item.source) === "coin_transactions")
+    .filter((item) => ["coin_transactions", "transactions"].includes(canonicalSource(item.source)))
     .filter(isWalletTransfer)
     .map((item) => Object.assign({}, item, {
       id: "wallet_transfer/" + item.id,
@@ -953,8 +953,8 @@ function transactionSearchText(item) {
   return [
     JSON.stringify(item),
     userLabel(transactionUid(item)),
-    userLabel(getFirstValue(item, ["senderUid", "fromUid", "senderId", "fromUserId", "from", "sender.uid"])),
-    userLabel(getFirstValue(item, ["receiverUid", "toUid", "receiverId", "toUserId", "to", "receiver.uid"])),
+    participantLabel(item, "from"),
+    participantLabel(item, "to"),
   ].join(" ").toLowerCase();
 }
 
@@ -965,6 +965,21 @@ function userLabel(uid) {
   if (name && name !== "No name") return name + " (" + uid + ")";
   if (user.email) return user.email + " (" + uid + ")";
   return uid;
+}
+
+function participantLabel(item, side) {
+  const uidPaths = side === "from"
+    ? ["senderUid", "fromUid", "senderId", "fromUserId", "from", "sender.uid"]
+    : ["receiverUid", "toUid", "receiverId", "toUserId", "to", "receiver.uid"];
+  const namePaths = side === "from"
+    ? ["fromName", "senderName", "sender.username", "sender.name"]
+    : ["toName", "receiverName", "receiver.username", "receiver.name"];
+  const uid = getFirstValue(item, uidPaths);
+  const name = getFirstValue(item, namePaths);
+
+  if (name && uid) return name + " (" + uid + ")";
+  if (name) return name;
+  return userLabel(uid);
 }
 
 function normalizeTransaction(item) {
@@ -1117,11 +1132,11 @@ function transactionDetails(item) {
   }
   const from = getFirstValue(item, ["senderUid", "fromUid", "senderId", "fromUserId", "from", "sender.uid"]);
   if (from) {
-    details.push({label: "From", value: userLabel(from)});
+    details.push({label: "From", value: participantLabel(item, "from")});
   }
   const to = getFirstValue(item, ["receiverUid", "toUid", "receiverId", "toUserId", "to", "receiver.uid"]);
   if (to) {
-    details.push({label: "To", value: userLabel(to)});
+    details.push({label: "To", value: participantLabel(item, "to")});
   }
   const paymentId = getFirstValue(item, ["paymentId", "paymongoPaymentId", "data.id", "payment.id"]);
   if (paymentId) {
@@ -1153,6 +1168,9 @@ function transactionAmountLabel(item) {
   if (amount === undefined || amount === null || amount === "") return "";
 
   const typeText = String(item.type || item.source || item.originalSource || "").toLowerCase();
+  const coins = getFirstValue(item, ["coins", "coinAmount", "coin_amount", "coinsAdded", "coinsDeducted"]);
+  if (coins && String(coins) === String(amount) && isWalletTransfer(item)) return "";
+
   const currency = String(getFirstValue(item, [
     "currency",
     "paymentCurrency",
