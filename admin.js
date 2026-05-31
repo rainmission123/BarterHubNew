@@ -17,8 +17,10 @@ const functions = firebase.app().functions("us-central1");
 
 const state = {
   users: {},
+  publicUsers: {},
   deletionRequests: {},
   transactions: [],
+  transactionReadStatus: {},
   transactionUserListeners: {},
   adminUid: "",
   pendingAction: null,
@@ -142,6 +144,12 @@ function startListeners() {
     renderAll();
   });
 
+  db.ref("public_users").on("value", (snapshot) => {
+    state.publicUsers = snapshot.val() || {};
+    listenUserTransactions();
+    renderAll();
+  });
+
   db.ref("account_deletion_requests").on("value", (snapshot) => {
     state.deletionRequests = snapshot.val() || {};
     renderAll();
@@ -184,6 +192,7 @@ function listenTransactions() {
     "orders",
     "checkout_sessions",
     "checkoutSessions",
+    "transactions",
     "user_transactions",
     "userTransactions",
   ].forEach((source) => {
@@ -193,13 +202,21 @@ function listenTransactions() {
       state.transactions = state.transactions
         .filter((item) => item.rawSource !== source)
         .concat(rows);
+      setTransactionReadStatus(source, rows.length);
+      renderAll();
+    }, (error) => {
+      setTransactionReadStatus(source, 0, error);
       renderAll();
     });
   });
 }
 
 function listenUserTransactions() {
-  const uids = Object.keys(state.users || {});
+  const uids = Array.from(new Set([
+    ...Object.keys(state.users || {}),
+    ...Object.keys(state.publicUsers || {}),
+    state.adminUid,
+  ].filter(Boolean)));
 
   uids.forEach((uid) => {
     if (state.transactionUserListeners[uid]) return;
@@ -212,10 +229,12 @@ function listenUserTransactions() {
       state.transactions = state.transactions
         .filter((item) => item.rawSource !== source)
         .concat(rows);
+      setTransactionReadStatus(source, rows.length);
       renderAll();
     };
     const errorHandler = (error) => {
       state.transactions = state.transactions.filter((item) => item.rawSource !== source);
+      setTransactionReadStatus(source, 0, error);
       console.warn("Could not read " + source, error);
       renderAll();
     };
@@ -231,6 +250,13 @@ function listenUserTransactions() {
     delete state.transactionUserListeners[uid];
     state.transactions = state.transactions.filter((item) => item.rawSource !== "transactions/" + uid);
   });
+}
+
+function setTransactionReadStatus(source, count, error) {
+  state.transactionReadStatus[source] = {
+    count,
+    error: error ? (error.code || error.message || String(error)) : "",
+  };
 }
 
 function flattenNode(source, value, parentKey = "") {
@@ -296,7 +322,8 @@ function renderAll() {
 }
 
 function userRows() {
-  return Object.entries(state.users).map(([uid, user]) => Object.assign({uid}, user || {}));
+  const merged = Object.assign({}, state.publicUsers, state.users);
+  return Object.entries(merged).map(([uid, user]) => Object.assign({uid}, user || {}));
 }
 
 function allTransactionRows() {
@@ -395,6 +422,10 @@ function userTransactionRows() {
   });
 
   return rows;
+}
+
+function userRecord(uid) {
+  return (state.users && state.users[uid]) || (state.publicUsers && state.publicUsers[uid]) || {};
 }
 
 function renderDashboard() {
@@ -881,6 +912,7 @@ function renderTransactions() {
     .slice(0, 150);
 
   const list = $("transactionsList");
+  renderTransactionDiagnostics(source);
   if (rows.length === 0) {
     list.innerHTML = empty("No transaction records found.");
     return;
@@ -908,6 +940,33 @@ function renderTransactions() {
         </div>
       </article>`;
   }).join("");
+}
+
+function renderTransactionDiagnostics(selectedSource) {
+  const container = $("transactionsDiagnostics");
+  if (!container) return;
+
+  const statuses = Object.entries(state.transactionReadStatus || {});
+  const relevant = statuses.filter(([source]) => {
+    if (selectedSource === "all") return true;
+    if (selectedSource === "user_transactions") {
+      return source === "transactions" || source.indexOf("transactions/") === 0 ||
+        canonicalSource(source) === "user_transactions";
+    }
+    return canonicalSource(source) === selectedSource;
+  });
+  const errors = relevant.filter(([, status]) => status.error);
+
+  if (errors.length === 0) {
+    container.classList.add("hidden");
+    container.innerHTML = "";
+    return;
+  }
+
+  container.classList.remove("hidden");
+  container.innerHTML = errors.slice(0, 6).map(([source, status]) => `
+    <span class="diagnostic-pill error">${escapeHtml(source)}: ${escapeHtml(status.error)}</span>
+  `).join("");
 }
 
 async function setIdStatus(uid, status) {
@@ -996,7 +1055,7 @@ function transactionSearchText(item) {
 
 function userLabel(uid) {
   if (!uid) return "Unknown user";
-  const user = state.users[uid] || {};
+  const user = userRecord(uid);
   const name = displayName(user);
   if (name && name !== "No name") return name + " (" + uid + ")";
   if (user.email) return user.email + " (" + uid + ")";
