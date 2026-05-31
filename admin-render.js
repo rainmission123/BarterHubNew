@@ -21,25 +21,35 @@ function renderDashboard() {
 
   const stats = state.adminStats || {};
 
-  const allRows = allTransactionRows();
-
-  let paidPayments = allRows.filter((item) =>
-    item.source === "processed_paymongo_payments" &&
-    isPaidPayMongo(item)
-  );
-
-  if (paidPayments.length === 0) {
-    paidPayments = allRows.filter((item) =>
-      item.source === "paymongo_payments" &&
-      isPaidPayMongo(item)
+  const paymongoRows = allTransactionRows().filter((item) =>
+  item.source === "paymongo_payments"
     );
-  }
 
-  const payments = paidPayments.length;
+    const uniquePayments = new Map();
 
-  const revenue = paidPayments.reduce((sum, item) => {
-    return sum + payMongoAmountToPeso(item.amount);
-  }, 0);
+    paymongoRows.forEach((item) => {
+      const key =
+        item.paymentId ||
+        item.paymongoPaymentId ||
+        item.id ||
+        `${item.uid}_${item.amount}_${item.timestamp}`;
+
+      if (!uniquePayments.has(key)) {
+        uniquePayments.set(key, item);
+      }
+    });
+
+    const payments = uniquePayments.size;
+
+    const revenue = Array.from(uniquePayments.values()).reduce((sum, item) => {
+      const amount = Number(item.amount || 0);
+
+      if (amount > 999) {
+        return sum + amount / 100;
+      }
+
+      return sum + amount;
+    }, 0);
 
   $("statUsers").textContent =
     stats.totalUsers !== undefined ? stats.totalUsers : users.length;
